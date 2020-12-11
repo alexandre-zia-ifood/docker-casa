@@ -192,7 +192,9 @@ class CasaConfig(object):
         else:
             key = "configuration_casa"
 
-        config = self.backend.get_entry(key, **{"bucket": "gluu"})
+        bucket_prefix = os.environ.get("GLUU_COUCHBASE_BUCKET_PREFIX", "gluu")
+
+        config = self.backend.get_entry(key, **{"bucket": bucket_prefix})
 
         if not config:
             conf_app = data
@@ -211,7 +213,7 @@ class CasaConfig(object):
                     "oxConfApplication": data,
                 }
 
-            self.backend.add_entry(key, attrs, **{"bucket": "gluu"})
+            self.backend.add_entry(key, attrs, **{"bucket": bucket_prefix})
 
         # if config exists, modify it if neccessary
         else:
@@ -236,4 +238,4 @@ class CasaConfig(object):
             if self.backend_type == "ldap":
                 conf_app = json.dumps(conf_app)
             attrs = {"oxConfApplication": conf_app}
-            self.backend.modify_entry(config.id, attrs, **{"bucket": "gluu"})
+            self.backend.modify_entry(config.id, attrs, **{"bucket": bucket_prefix})
