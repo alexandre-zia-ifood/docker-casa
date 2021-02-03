@@ -11,23 +11,13 @@ RUN mkdir -p /usr/lib/jvm/default-jvm /usr/java/latest \
 
 RUN apk update \
     && apk add --no-cache py3-pip openssl tini \
-    && apk add --no-cache --virtual build-deps git wget
-
-# ======
-# rclone
-# ======
-
-ARG RCLONE_VERSION=v1.51.0
-RUN wget -q https://github.com/rclone/rclone/releases/download/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-amd64.zip -O /tmp/rclone.zip \
-    && unzip -qq /tmp/rclone.zip -d /tmp \
-    && mv /tmp/rclone-${RCLONE_VERSION}-linux-amd64/rclone /usr/bin/ \
-    && rm -rf /tmp/rclone-${RCLONE_VERSION}-linux-amd64 /tmp/rclone.zip
+    && apk add --no-cache --virtual build-deps git wget gcc musl-dev python3-dev libffi-dev openssl-dev libxml2-dev libxslt-dev
 
 # =====
 # Jetty
 # =====
 
-ARG JETTY_VERSION=9.4.26.v20200117
+ARG JETTY_VERSION=9.4.35.v20201120
 ARG JETTY_HOME=/opt/jetty
 ARG JETTY_BASE=/opt/gluu/jetty
 ARG JETTY_USER_HOME_LIB=/home/jetty/lib
@@ -46,8 +36,8 @@ EXPOSE 8080
 # Casa
 # ====
 
-ENV GLUU_VERSION=4.2.2.Final
-ENV GLUU_BUILD_DATE="2020-12-22 12:32"
+ENV GLUU_VERSION=4.2.3.Final
+ENV GLUU_BUILD_DATE="2021-02-02 12:49"
 
 # Install Casa
 RUN wget -q https://ox.gluu.org/maven/org/gluu/casa/${GLUU_VERSION}/casa-${GLUU_VERSION}.war -O /tmp/casa.war \
@@ -72,7 +62,6 @@ RUN wget -q https://repo1.maven.org/maven2/org/jsmpp/jsmpp/${JSMPP_VERSION}/jsmp
 # Python
 # ======
 
-RUN apk add --no-cache py3-cryptography py3-lxml
 COPY requirements.txt /app/requirements.txt
 RUN pip3 install -U pip \
     && pip3 install --no-cache-dir -r /app/requirements.txt \
@@ -82,8 +71,19 @@ RUN pip3 install -U pip \
 # Cleanup
 # =======
 
-RUN apk del build-deps \
-    && rm -rf /var/cache/apk/*
+# webdavclient3 requires binary compiled from libxslt-dev
+RUN cp /usr/lib/libxslt.so.1 /tmp/libxslt.so.1 \
+    && cp /usr/lib/libexslt.so.0 /tmp/libexslt.so.0 \
+    && cp /usr/lib/libxml2.so.2 /tmp/libxml2.so.2 \
+    && cp /usr/lib/libgcrypt.so.20 /tmp/libgcrypt.so.20 \
+    && cp /usr/lib/libgpg-error.so.0 /tmp/libgpg-error.so.0 \
+    && apk del build-deps \
+    && rm -rf /var/cache/apk/* \
+    && mv /tmp/libxslt.so.1 /usr/lib/libxslt.so.1 \
+    && mv /tmp/libexslt.so.0 /usr/lib/libexslt.so.0 \
+    && mv /tmp/libxml2.so.2 /usr/lib/libxml2.so.2 \
+    && mv /tmp/libgcrypt.so.20 /usr/lib/libgcrypt.so.20 \
+    && mv /tmp/libgpg-error.so.0 /usr/lib/libgpg-error.so.0
 
 # =======
 # License
@@ -167,8 +167,8 @@ ENV GLUU_MAX_RAM_PERCENTAGE=75.0 \
 LABEL name="Casa" \
     maintainer="Gluu Inc. <support@gluu.org>" \
     vendor="Gluu Federation" \
-    version="4.2.2" \
-    release="03" \
+    version="4.2.3" \
+    release="01" \
     summary="Gluu Casa" \
     description="Self-service portal for people to manage their account security preferences in the Gluu Server, like 2FA"
 
