@@ -5,7 +5,7 @@ Docker assets for Casa
 ## Versions
 
 See [Releases](https://github.com/GluuFederation/docker-casa/releases) for stable versions.
-For bleeding-edge/unstable version, use `gluufederation/casa:4.2.3_dev`.
+For bleeding-edge/unstable version, use `gluufederation/casa:4.3.0_dev`.
 
 ## Environment Variables
 

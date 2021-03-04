@@ -33,8 +33,8 @@ EXPOSE 8080
 # Casa
 # ====
 
-ENV GLUU_VERSION=4.2.3.Final
-ENV GLUU_BUILD_DATE="2021-02-02 12:49"
+ENV GLUU_VERSION=4.3.0-SNAPSHOT
+ENV GLUU_BUILD_DATE="2021-02-05 14:32"
 
 # Install Casa
 RUN wget -q https://ox.gluu.org/maven/org/gluu/casa/${GLUU_VERSION}/casa-${GLUU_VERSION}.war -O /tmp/casa.war \
@@ -153,8 +153,8 @@ ENV GLUU_MAX_RAM_PERCENTAGE=75.0 \
 LABEL name="Casa" \
     maintainer="Gluu Inc. <support@gluu.org>" \
     vendor="Gluu Federation" \
-    version="4.2.3" \
-    release="01" \
+    version="4.3.0" \
+    release="dev" \
     summary="Gluu Casa" \
     description="Self-service portal for people to manage their account security preferences in the Gluu Server, like 2FA"
 
