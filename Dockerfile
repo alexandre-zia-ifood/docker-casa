@@ -34,7 +34,7 @@ EXPOSE 8080
 # ====
 
 ENV GLUU_VERSION=4.3.0-SNAPSHOT
-ENV GLUU_BUILD_DATE="2021-03-10 12:24"
+ENV GLUU_BUILD_DATE="2021-03-25 15:26"
 
 # Install Casa
 RUN wget -q https://ox.gluu.org/maven/org/gluu/casa/${GLUU_VERSION}/casa-${GLUU_VERSION}.war -O /tmp/casa.war \
@@ -121,6 +121,7 @@ ENV GLUU_SECRET_ADAPTER=vault \
 ENV GLUU_PERSISTENCE_TYPE=ldap \
     GLUU_PERSISTENCE_LDAP_MAPPING=default \
     GLUU_LDAP_URL=localhost:1636 \
+    GLUU_LDAP_USE_SSL=true \
     GLUU_COUCHBASE_URL=localhost \
     GLUU_COUCHBASE_USER=admin \
     GLUU_COUCHBASE_CERT_FILE=/etc/certs/couchbase.crt \
