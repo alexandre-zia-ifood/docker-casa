@@ -6,6 +6,8 @@ from pygluu.containerlib.persistence.couchbase import CouchbaseClient
 from pygluu.containerlib.persistence.couchbase import get_couchbase_password
 from pygluu.containerlib.persistence.couchbase import get_couchbase_user
 from pygluu.containerlib.persistence.ldap import LdapClient
+from pygluu.containerlib.persistence.sql import SQLClient
+from pygluu.containerlib.persistence.spanner import SpannerClient
 
 from oxd import resolve_oxd_url
 
@@ -109,6 +111,41 @@ class CouchbaseBackend:
         return False, ""
 
 
+class SQLBackend:
+    def __init__(self, manager):
+        self.client = SQLClient(manager)
+
+    def get_entry(self, key, filter_="", attrs=None, **kwargs):
+        entry = self.client.get("oxApplicationConfiguration", key)
+
+        if not entry:
+            return {}
+        return Entry(entry.pop("doc_id"), entry)
+
+    def modify_entry(self, key, attrs=None, **kwargs):
+        attrs = attrs or {}
+        updated = self.client.update("oxApplicationConfiguration", key, attrs)
+        return updated, ""
+
+    def add_entry(self, key, attrs=None, **kwargs):
+        attrs = attrs or {}
+        self.client.insert_into("oxApplicationConfiguration", attrs)
+        return True, ""
+
+
+class SpannerBackend(SQLBackend):
+    def __init__(self, manager):
+        self.client = SpannerClient(manager)
+
+
+_backend_classes = {
+    "ldap": LDAPBackend,
+    "couchbase": CouchbaseBackend,
+    "sql": SQLBackend,
+    "spanner": SpannerBackend,
+}
+
+
 class CasaConfig(object):
     def __init__(self, manager):
         self.manager = manager
@@ -116,22 +153,16 @@ class CasaConfig(object):
         persistence_type = os.environ.get("GLUU_PERSISTENCE_TYPE", "ldap")
         ldap_mapping = os.environ.get("GLUU_PERSISTENCE_LDAP_MAPPING", "default")
 
-        if persistence_type == "ldap":
-            backend_type = "ldap"
-            backend_cls = LDAPBackend
-        elif persistence_type == "couchbase":
-            backend_type = "couchbase"
-            backend_cls = CouchbaseBackend
+        if persistence_type in ("ldap", "couchbase", "sql", "spanner"):
+            backend_type = persistence_type
         else:  # probably `hybrid`
             if ldap_mapping == "default":
                 backend_type = "ldap"
-                backend_cls = LDAPBackend
             else:
                 backend_type = "couchbase"
-                backend_cls = CouchbaseBackend
 
         self.backend_type = backend_type
-        self.backend = backend_cls(self.manager)
+        self.backend = _backend_classes[backend_type](self.manager)
 
     def json_from_template(self):
         oxd_url = os.environ.get("GLUU_OXD_SERVER_URL", "localhost:8443")
@@ -153,8 +184,11 @@ class CasaConfig(object):
 
         if self.backend_type == "ldap":
             key = "ou=casa,ou=configuration,o=gluu"
-        else:
+        elif self.backend_type == "couchbase":
             key = "configuration_casa"
+        else:
+            # likely sql or spanner
+            key = "casa"
 
         bucket_prefix = os.environ.get("GLUU_COUCHBASE_BUCKET_PREFIX", "gluu")
 
@@ -168,24 +202,34 @@ class CasaConfig(object):
                     "objectClass": ["top", "oxApplicationConfiguration"],
                     "ou": "casa",
                     "oxConfApplication": json.dumps(data),
+                    "oxRevision": "1",
                 }
-            else:
+            elif self.backend_type == "couchbase":
                 attrs = {
                     "dn": "ou=casa,ou=configuration,o=gluu",
                     "objectClass": "oxApplicationConfiguration",
                     "ou": "casa",
                     "oxConfApplication": data,
+                    "oxRevision": 1,
                 }
-
+            else:
+                # likely sql or spanner
+                attrs = {
+                    "dn": "ou=casa,ou=configuration,o=gluu",
+                    "objectClass": "oxApplicationConfiguration",
+                    "ou": "casa",
+                    "oxConfApplication": json.dumps(data),
+                    "oxRevision": 1,
+                }
             self.backend.add_entry(key, attrs, **{"bucket": bucket_prefix})
 
         # if config exists, modify it if neccessary
         else:
+            # compare oxd_config
             should_modify = False
 
-            # compare oxd_config
             conf_app = config.attrs["oxConfApplication"]
-            if self.backend_type == "ldap":
+            if self.backend_type != "couchbase":
                 conf_app = json.loads(conf_app)
 
             if data["oxd_config"]["host"] != conf_app["oxd_config"]["host"]:
@@ -199,7 +243,8 @@ class CasaConfig(object):
             if not should_modify:
                 return
 
-            if self.backend_type == "ldap":
+            if self.backend_type != "couchbase":
                 conf_app = json.dumps(conf_app)
+
             attrs = {"oxConfApplication": conf_app}
             self.backend.modify_entry(config.id, attrs, **{"bucket": bucket_prefix})
