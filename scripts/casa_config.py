@@ -2,18 +2,10 @@ import os
 import json
 from collections import namedtuple
 
-from ldap3 import (
-    BASE,
-    Connection,
-    MODIFY_DELETE,
-    MODIFY_REPLACE,
-    Server,
-)
-
 from pygluu.containerlib.persistence.couchbase import CouchbaseClient
 from pygluu.containerlib.persistence.couchbase import get_couchbase_password
 from pygluu.containerlib.persistence.couchbase import get_couchbase_user
-from pygluu.containerlib.utils import decode_text
+from pygluu.containerlib.persistence.ldap import LdapClient
 
 from oxd import resolve_oxd_url
 
@@ -22,59 +14,34 @@ Entry = namedtuple("Entry", ["id", "attrs"])
 
 class LDAPBackend:
     def __init__(self, manager):
-        url = os.environ.get("GLUU_LDAP_URL", "localhost:1636")
-        user = manager.config.get("ldap_binddn")
-        passwd = decode_text(
-            manager.secret.get("encoded_ox_ldap_pw"),
-            manager.secret.get("encoded_salt"),
-        )
-
-        server = Server(url, port=1636, use_ssl=True)
-        self.conn = Connection(server, user, passwd)
+        self.client = LdapClient(manager)
         self.manager = manager
 
     def get_entry(self, key, filter_="", attrs=None, **kwargs):
-        attrs = None or ["*"]
         filter_ = filter_ or "(objectClass=*)"
+        entry = self.client.get(key, filter_, attrs)
 
-        with self.conn as conn:
-            conn.search(
-                search_base=key,
-                search_filter=filter_,
-                search_scope=BASE,
-                attributes=attrs,
-            )
-
-            if not conn.entries:
-                return
-
-            entry = conn.entries[0]
-            id_ = entry.entry_dn
-            attrs = {}
-
-            for k, v in entry.entry_attributes_as_dict.items():
-                if len(v) < 2:
-                    v = v[0]
-                attrs[k] = v
-            return Entry(id_, attrs)
+        _attrs = {}
+        for k, v in entry.entry_attributes_as_dict.items():
+            if len(v) < 2:
+                v = v[0]
+            _attrs[k] = v
+        return Entry(entry.entry_dn, _attrs)
 
     def modify_entry(self, key, attrs=None, **kwargs):
         attrs = attrs or {}
         del_flag = kwargs.get("delete_attr", False)
 
         if del_flag:
-            mod = MODIFY_DELETE
+            mod = self.client.MODIFY_DELETE
         else:
-            mod = MODIFY_REPLACE
+            mod = self.client.MODIFY_REPLACE
 
         for k, v in attrs.items():
             if not isinstance(v, list):
                 v = [v]
             attrs[k] = [(mod, v)]
-
-        with self.conn as conn:
-            conn.modify(key, attrs)
-            return bool(conn.result["description"] == "success"), conn.result["message"]
+        return self.client.modify(key, attrs)
 
     def add_entry(self, key, attrs=None, **kwargs):
         attrs = attrs or {}
@@ -83,10 +50,7 @@ class LDAPBackend:
             if not isinstance(v, list):
                 v = [v]
             attrs[k] = v
-
-        with self.conn as conn:
-            conn.add(key, attributes=attrs)
-            return bool(conn.result["description"] == "success"), conn.result["message"]
+        return self.client.add(key, attrs)
 
 
 class CouchbaseBackend:
