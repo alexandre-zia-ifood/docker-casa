@@ -113,7 +113,7 @@ class CouchbaseBackend:
 
 class SQLBackend:
     def __init__(self, manager):
-        self.client = SQLClient(manager)
+        self.client = SQLClient()
 
     def get_entry(self, key, filter_="", attrs=None, **kwargs):
         entry = self.client.get("oxApplicationConfiguration", key)
@@ -135,7 +135,7 @@ class SQLBackend:
 
 class SpannerBackend(SQLBackend):
     def __init__(self, manager):
-        self.client = SpannerClient(manager)
+        self.client = SpannerClient()
 
 
 _backend_classes = {
