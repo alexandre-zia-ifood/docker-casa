@@ -129,6 +129,7 @@ class SQLBackend:
 
     def add_entry(self, key, attrs=None, **kwargs):
         attrs = attrs or {}
+        attrs["doc_id"] = key
         self.client.insert_into("oxApplicationConfiguration", attrs)
         return True, ""
 
