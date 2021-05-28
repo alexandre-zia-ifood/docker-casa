@@ -129,7 +129,6 @@ class SQLBackend:
 
     def add_entry(self, key, attrs=None, **kwargs):
         attrs = attrs or {}
-        attrs["doc_id"] = key
         self.client.insert_into("oxApplicationConfiguration", attrs)
         return True, ""
 
@@ -196,8 +195,6 @@ class CasaConfig(object):
         config = self.backend.get_entry(key, **{"bucket": bucket_prefix})
 
         if not config:
-            conf_app = data
-
             if self.backend_type == "ldap":
                 attrs = {
                     "objectClass": ["top", "oxApplicationConfiguration"],
@@ -216,6 +213,7 @@ class CasaConfig(object):
             else:
                 # likely sql or spanner
                 attrs = {
+                    "doc_id": key,
                     "dn": "ou=casa,ou=configuration,o=gluu",
                     "objectClass": "oxApplicationConfiguration",
                     "ou": "casa",
