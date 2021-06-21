@@ -9,6 +9,8 @@ from pygluu.containerlib.persistence import render_ldap_properties
 from pygluu.containerlib.persistence import render_salt
 from pygluu.containerlib.persistence import sync_couchbase_truststore
 from pygluu.containerlib.persistence import sync_ldap_truststore
+from pygluu.containerlib.persistence import render_sql_properties
+from pygluu.containerlib.persistence import render_spanner_properties
 from pygluu.containerlib.utils import cert_to_truststore
 from pygluu.containerlib.utils import get_server_certificate
 from pygluu.containerlib.utils import as_boolean
@@ -85,6 +87,20 @@ def main():
 
     if persistence_type == "hybrid":
         render_hybrid_properties("/etc/gluu/conf/gluu-hybrid.properties")
+
+    if persistence_type == "sql":
+        render_sql_properties(
+            manager,
+            "/app/templates/gluu-sql.properties.tmpl",
+            "/etc/gluu/conf/gluu-sql.properties",
+        )
+
+    if persistence_type == "spanner":
+        render_spanner_properties(
+            manager,
+            "/app/templates/gluu-spanner.properties.tmpl",
+            "/etc/gluu/conf/gluu-spanner.properties",
+        )
 
     if not os.path.isfile("/etc/certs/gluu_https.crt"):
         if as_boolean(os.environ.get("GLUU_SSL_CERT_FROM_SECRETS", False)):

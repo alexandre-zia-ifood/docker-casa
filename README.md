@@ -66,3 +66,13 @@ The following environment variables are supported by the container:
 - `GLUU_JACKRABBIT_ADMIN_ID`: Admin username (default to `admin`).
 - `GLUU_JACKRABBIT_ADMIN_PASSWORD_FILE`: Absolute path to file contains password for admin user (default to `/etc/gluu/conf/jackrabbit_admin_password`).
 - `GLUU_SSL_CERT_FROM_SECRETS`: Determine whether to get SSL cert from secrets backend (default to `false`). Note that the flag will take effect only if there's no mounted `/etc/certs/gluu_https.crt` file.
+- `GLUU_SQL_DB_DIALECT`: Dialect name of SQL backend (one of `mysql`, `pgsql`; default to `mysql`).
+- `GLUU_SQL_DB_HOST`: Host of SQL backend (default to `localhost`).
+- `GLUU_SQL_DB_PORT`: Port of SQL backend (default to `3306`).
+- `GLUU_SQL_DB_NAME`: Database name (default to `gluu`)
+- `GLUU_SQL_DB_USER`: User name to interact with SQL backend (default to `gluu`).
+- `GLUU_SQL_PASSWORD_FILE`: Path to file contains password for SQL backend (default to `/etc/gluu/conf/sql_password`).
+- `GLUU_GOOGLE_SPANNER_INSTANCE_ID`: Instance ID of Google Spanner (default to empty string).
+- `GLUU_GOOGLE_SPANNER_DATABASE_ID`: Database ID of Google Spanner (default to empty string).
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to Google credentials JSON file (default to `/etc/gluu/conf/google-credentials.json`).
+- `GOOGLE_PROJECT_ID`: Google Project ID (default to empty string).

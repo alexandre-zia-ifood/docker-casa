@@ -5,7 +5,7 @@ FROM alpine:3.13
 # ===============
 
 RUN apk update \
-    && apk add --no-cache py3-pip openssl tini openjdk11-jre-headless py3-cryptography py3-lxml \
+    && apk add --no-cache py3-pip openssl tini openjdk11-jre-headless py3-cryptography py3-lxml py3-grpcio py3-psycopg2 \
     && apk add --no-cache --virtual build-deps git wget gcc musl-dev python3-dev libffi-dev openssl-dev libxml2-dev libxslt-dev cargo \
     && mkdir -p /usr/java/latest \
     && ln -sf /usr/lib/jvm/default-jvm/jre /usr/java/latest/jre
@@ -34,7 +34,7 @@ EXPOSE 8080
 # ====
 
 ENV GLUU_VERSION=4.3.0-SNAPSHOT
-ENV GLUU_BUILD_DATE="2021-04-06 13:26"
+ENV GLUU_BUILD_DATE="2021-06-09 16:43"
 
 # Install Casa
 RUN wget -q https://ox.gluu.org/maven/org/gluu/casa/${GLUU_VERSION}/casa-${GLUU_VERSION}.war -O /tmp/casa.war \
@@ -131,7 +131,15 @@ ENV GLUU_PERSISTENCE_TYPE=ldap \
     GLUU_COUCHBASE_BUCKET_PREFIX=gluu \
     GLUU_COUCHBASE_TRUSTSTORE_ENABLE=true \
     GLUU_COUCHBASE_KEEPALIVE_INTERVAL=30000 \
-    GLUU_COUCHBASE_KEEPALIVE_TIMEOUT=2500
+    GLUU_COUCHBASE_KEEPALIVE_TIMEOUT=2500 \
+    GLUU_SQL_DB_DIALECT=mysql \
+    GLUU_SQL_DB_HOST=localhost \
+    GLUU_SQL_DB_PORT=3306 \
+    GLUU_SQL_DB_NAME=gluu \
+    GLUU_SQL_DB_USER=gluu \
+    GLUU_SQL_PASSWORD_FILE=/etc/gluu/conf/sql_password \
+    GLUU_GOOGLE_SPANNER_INSTANCE_ID="" \
+    GLUU_GOOGLE_SPANNER_DATABASE_ID=""
 
 # ===========
 # Generic ENV
@@ -147,7 +155,9 @@ ENV GLUU_MAX_RAM_PERCENTAGE=75.0 \
     GLUU_JACKRABBIT_URL=http://localhost:8080 \
     GLUU_JACKRABBIT_ADMIN_ID=admin \
     GLUU_JACKRABBIT_ADMIN_PASSWORD_FILE=/etc/gluu/conf/jackrabbit_admin_password \
-    GLUU_SSL_CERT_FROM_SECRETS=false
+    GLUU_SSL_CERT_FROM_SECRETS=false \
+    GOOGLE_APPLICATION_CREDENTIALS=/etc/gluu/conf/google-credentials.json \
+    GOOGLE_PROJECT_ID=""
 
 # ==========
 # misc stuff
