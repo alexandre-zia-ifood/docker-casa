@@ -1,5 +1,6 @@
+# Please do not attempt to edit this flow without the direct consent from the DevOps team. This file is managed centrally.
+# Contact @moabu
 name: triggerdevbuild
-# This builds, packages and releases pygluu-kubernetes
 on: [workflow_dispatch]
 jobs:
   checkBuildAndUpdate:
@@ -9,7 +10,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Set up Python 3.7
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.7
 
@@ -17,6 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo python3 -m pip install --upgrade pip
+          sudo pip3 install setuptools --upgrade
           sudo pip3 install -r ./automation/requirements.txt
           sudo apt-get update
           sudo apt-get install jq
@@ -28,16 +30,39 @@ jobs:
           cd automation
           sudo python3 auto_update_build_date.py
 
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v3
         with:
-          # Required
-          commit_message: Updated build date.
-          # Optional local file path to the repository
-          repository: .
+          gpg-private-key: ${{ secrets.MOAUTO_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.MOAUTO_GPG_PRIVATE_KEY_PASSPHRASE }}
+          git-user-signingkey: true
+          git-commit-gpgsign: true
 
-          # Optional commit user and author settings
-          commit_user_name: git-gluu
-          commit_user_email: git-gluu@github.com
-          commit_author: git-gluu <git-gluu@github.com>
-          # Optional: Disable dirty check and always try to create a commit and push
-          skip_dirty_check: true
+      - name: Configure Git
+        run: |
+          git config user.name "mo-auto"
+          git config user.email "54212639+mo-auto@users.noreply.github.com"
+          git config --global user.signingkey "${{ steps.import_gpg.outputs.keyid }}"
+          git add -A
+          git commit -S -s -m "chore(Dockerfile): updated build date"
+      # Push updated index and packaged tgz back into git repo
+      - name: Update repo with output
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.MOWORKFLOWTOKEN }}
+          committer: mo-auto <54212639+mo-auto@users.noreply.github.com>
+          author: mo-auto <54212639+mo-auto@users.noreply.github.com>
+          branch: update-source-build-date
+          title: 'chore(Dockerfile): updated build date'
+          body: |
+            - Leave open until official image release.
+            - Updated build date.
+            - Auto-generated.
+
+          labels: |
+            enhancement
+            bot
+          assignees: moabu
+          reviewers: moabu
+          delete-branch: true
