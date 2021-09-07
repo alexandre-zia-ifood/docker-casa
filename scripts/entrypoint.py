@@ -51,14 +51,6 @@ def modify_jetty_xml():
         flags=re.DOTALL | re.M,
     )
 
-    # disable Jetty version info
-    updates = re.sub(
-        r'(<Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default=")true(" /></Set>)',
-        r'\1false\2',
-        updates,
-        flags=re.DOTALL | re.M,
-    )
-
     with open(fn, "w") as f:
         f.write(updates)
 
@@ -124,12 +116,22 @@ def main():
     )
     modify_jetty_xml()
     modify_webdefault_xml()
+    modify_server_ini()
 
     manager.secret.to_file("passport_rp_jks_base64", "/etc/certs/passport-rp.jks",
                            decode=True, binary_mode=True)
 
     config = CasaConfig(manager)
     config.setup()
+
+
+def modify_server_ini():
+    with open("/opt/gluu/jetty/casa/start.d/server.ini", "a") as f:
+        updates = "\n".join([
+            # disable server version info
+            "jetty.httpConfig.sendServerVersion=false",
+        ])
+        f.write(updates)
 
 
 if __name__ == "__main__":

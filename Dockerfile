@@ -14,16 +14,16 @@ RUN apk update \
 # Jetty
 # =====
 
-ARG JETTY_VERSION=9.4.43.v20210629
+ARG JETTY_VERSION=10.0.6
 ARG JETTY_HOME=/opt/jetty
 ARG JETTY_BASE=/opt/gluu/jetty
 ARG JETTY_USER_HOME_LIB=/home/jetty/lib
 
 # Install jetty
-RUN wget -q https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/${JETTY_VERSION}/jetty-distribution-${JETTY_VERSION}.tar.gz -O /tmp/jetty.tar.gz \
+RUN wget -q https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/${JETTY_VERSION}/jetty-home-${JETTY_VERSION}.tar.gz -O /tmp/jetty.tar.gz \
     && mkdir -p /opt \
     && tar -xzf /tmp/jetty.tar.gz -C /opt \
-    && mv /opt/jetty-distribution-${JETTY_VERSION} ${JETTY_HOME} \
+    && mv /opt/jetty-home-${JETTY_VERSION} ${JETTY_HOME} \
     && rm -rf /tmp/jetty.tar.gz
 
 # Ports required by jetty
@@ -34,14 +34,15 @@ EXPOSE 8080
 # ====
 
 ENV GLUU_VERSION=4.3.0-SNAPSHOT
-ENV GLUU_BUILD_DATE="2021-08-08 14:25"
+ENV GLUU_BUILD_DATE="2021-09-03 12:28"
 
 # Install Casa
 RUN wget -q https://ox.gluu.org/maven/org/gluu/casa/${GLUU_VERSION}/casa-${GLUU_VERSION}.war -O /tmp/casa.war \
     && mkdir -p ${JETTY_BASE}/casa/webapps/casa \
     && unzip -qq /tmp/casa.war -d ${JETTY_BASE}/casa/webapps/casa \
-    && java -jar ${JETTY_HOME}/start.jar jetty.home=${JETTY_HOME} jetty.base=${JETTY_BASE}/casa --add-to-start=server,deploy,resources,http,http-forwarded,jsp \
-    && rm -f /tmp/casa.war
+    && java -jar ${JETTY_HOME}/start.jar jetty.home=${JETTY_HOME} jetty.base=${JETTY_BASE}/casa --add-to-start=server,deploy,resources,http,http-forwarded,jsp,cdi-decorate \
+    && rm -f /tmp/casa.war \
+    && rm -f ${JETTY_BASE}/casa/webapps/casa/WEB-INF/jetty-web.xml
 
 # ===========
 # Custom libs
@@ -180,6 +181,7 @@ RUN mkdir -p /etc/certs \
     /app/templates \
     /app/tmp
 
+COPY jetty/jetty-env.xml ${JETTY_BASE}/casa/webapps/casa/WEB-INF/
 COPY templates /app/templates/
 COPY scripts /app/scripts
 RUN chmod +x /app/scripts/entrypoint.sh \
