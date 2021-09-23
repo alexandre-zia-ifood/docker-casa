@@ -43,12 +43,11 @@ def sync_from_webdav(url, username, password):
                 if not os.path.exists(os.path.dirname(dest)):
                     os.makedirs(os.path.dirname(dest))
 
-                if os.path.exists(dest) and not filecmp.cmp(src, dest, shallow=False):
-                    # logger.info(f"Copying {src} to {dest}")
-                    shutil.copyfile(src, dest)
-                else:
-                    # logger.info(f"Copying {src} to {dest}")
-                    shutil.copyfile(src, dest)
+                if os.path.exists(dest) and filecmp.cmp(src, dest, shallow=False):
+                    continue
+
+                # logger.info(f"Copying {src} to {dest}")
+                shutil.copyfile(src, dest)
 
     except (RemoteResourceNotFound, NoConnection) as exc:
         logger.warning(f"Unable to sync files from {url}{ROOT_DIR}{SYNC_DIR}; reason={exc}")
