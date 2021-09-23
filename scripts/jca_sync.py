@@ -43,7 +43,10 @@ def sync_from_webdav(url, username, password):
                 if not os.path.exists(os.path.dirname(dest)):
                     os.makedirs(os.path.dirname(dest))
 
-                if not filecmp.cmp(src, dest, shallow=False):
+                if os.path.exists(dest) and not filecmp.cmp(src, dest, shallow=False):
+                    # logger.info(f"Copying {src} to {dest}")
+                    shutil.copyfile(src, dest)
+                else:
                     # logger.info(f"Copying {src} to {dest}")
                     shutil.copyfile(src, dest)
 
