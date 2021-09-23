@@ -3,6 +3,7 @@ import logging.config
 import os
 import shutil
 import time
+import filecmp
 
 from webdav3.client import Client
 from webdav3.exceptions import RemoteResourceNotFound
@@ -41,8 +42,11 @@ def sync_from_webdav(url, username, password):
 
                 if not os.path.exists(os.path.dirname(dest)):
                     os.makedirs(os.path.dirname(dest))
-                # logger.info(f"Copying {src} to {dest}")
-                shutil.copyfile(src, dest)
+
+                if not filecmp.cmp(src, dest, shallow=False):
+                    # logger.info(f"Copying {src} to {dest}")
+                    shutil.copyfile(src, dest)
+
     except (RemoteResourceNotFound, NoConnection) as exc:
         logger.warning(f"Unable to sync files from {url}{ROOT_DIR}{SYNC_DIR}; reason={exc}")
 
